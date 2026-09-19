@@ -80,7 +80,7 @@ function SelectControl<T extends string>({
 }
 
 function useVisible(ref: RefObject<HTMLElement | null>): boolean {
-  const [visible, setVisible] = useState(typeof IntersectionObserver === "undefined");
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
     if (visible || !ref.current || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver(entries => {
