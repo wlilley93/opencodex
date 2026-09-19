@@ -1010,6 +1010,10 @@ const PROVIDER_CONFIG_FIELD_POLICY = {
   unsupportedHostedTools: "editor",
   responsesSnapshotRepair: "editor",
   webSearchBridge: "editor",
+  dictationUrl: "editor",
+  // Header values may carry credentials (or ${ENV} references to them); treat like `headers`.
+  dictationHeaders: "redacted",
+  dictationProtocols: "editor",
   reasoningEffortMap: "editor",
   modelReasoningEffortMap: "editor",
   reasoningWireFormat: "editor",
