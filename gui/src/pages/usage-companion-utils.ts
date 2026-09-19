@@ -50,6 +50,7 @@ export interface CompanionSettingsResponse {
   settings: CompanionSettings;
   updatedAt: number | null;
   defaults: CompanionSettings;
+  corrupt?: boolean;
 }
 
 export const CHART_BUCKET_MINUTES: Record<ChartHours, number> = {

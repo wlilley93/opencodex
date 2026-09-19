@@ -186,13 +186,14 @@ export default function UsageCompanionPanel({
   }, [chartQuery, loadTimeline, visible]);
 
   const updateSettings = useCallback((patch: Partial<CompanionSettings>) => {
+    if (response?.corrupt) return;
     setSettings(current => current ? { ...current, ...patch } : current);
     setSaveState("saving");
     setSaveError(null);
-  }, []);
+  }, [response?.corrupt]);
 
   useEffect(() => {
-    if (!settings || !saveBaseline.current || saveBaseline.current === settings || saveState !== "saving") return;
+    if (response?.corrupt || !settings || !saveBaseline.current || saveBaseline.current === settings || saveState !== "saving") return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       try {
@@ -216,7 +217,7 @@ export default function UsageCompanionPanel({
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [apiBase, availableModels, saveState, settings]);
+  }, [apiBase, availableModels, response?.corrupt, saveState, settings]);
 
   const reset = useCallback(async () => {
     setSaveState("saving");
@@ -228,17 +229,13 @@ export default function UsageCompanionPanel({
         body: JSON.stringify({ reset: true }),
       });
       if (!result.ok) throw new Error(`${result.status} ${result.statusText}`.trim());
-      const next = await result.json() as CompanionSettingsResponse;
-      setResponse(next);
-      setSettings(next.settings);
-      saveBaseline.current = next.settings;
-      onSettingsLoaded?.(next.settings.menuBarMetric);
+      await loadSettings();
       setSaveState("saved");
     } catch (error) {
       setSaveError(errorMessage(error));
       setSaveState("error");
     }
-  }, [apiBase, onSettingsLoaded]);
+  }, [apiBase, loadSettings]);
 
   if (settingsError) {
     return <section ref={rootRef} className="usage-companion-panel"><p role="alert">{t("usage.companion.settingsUnavailable")}</p><button type="button" className="btn btn-ghost btn-sm" onClick={() => void loadSettings()}>{t("common.retry")}</button></section>;
@@ -256,6 +253,10 @@ export default function UsageCompanionPanel({
     : saveState === "error" ? t("usage.companion.saveFailed", { error: saveError ?? "" }) : "";
   return (
     <section ref={rootRef} className="usage-companion-panel">
+      {response?.corrupt && <div className="usage-companion-save-status is-error" role="alert">
+        <span>{t("usage.companion.corrupt")}</span>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => void reset()} disabled={saveState === "saving"}>{t("usage.companion.corruptReset")}</button>
+      </div>}
       <div className="usage-companion-header">
         <div>
           <h3 className="panel-title">{t("usage.companion.title")}</h3>
@@ -264,7 +265,7 @@ export default function UsageCompanionPanel({
         <a className="btn btn-ghost btn-sm" href="https://opencodex.me/guides/macos-menu-bar/" target="_blank" rel="noreferrer">{t("usage.companion.installGuide")}</a>
       </div>
       <UsageCompanionChart timeline={timeline} chartStyle={current.chartStyle} hours={current.chartHours} loading={timelineLoading} error={timelineError} onRetry={() => void loadTimeline()} locale={locale} t={t} />
-      <div className="usage-companion-controls">
+      <fieldset className="usage-companion-controls" disabled={response?.corrupt}>
         <Segment label={t("usage.companion.menuBarShows")} value={current.menuBarMetric} options={MENU_METRICS} optionLabel={value => t(`usage.companion.menu${value[0]!.toUpperCase()}${value.slice(1)}` as never)} onChange={value => updateSettings({ menuBarMetric: value })} />
         <Segment label={t("usage.companion.window")} value={current.chartHours} options={WINDOWS} optionLabel={value => t(`usage.companion.window${value}` as never)} onChange={value => updateSettings({ chartHours: value, bucketMinutes: bucketMinutesForWindow(value) })} />
         <Segment label={t("usage.companion.style")} value={current.chartStyle} options={CHART_STYLES} optionLabel={value => value === "line" ? t("usage.companion.styleLine") : t("usage.companion.styleStacked")} onChange={value => updateSettings({ chartStyle: value })} />
@@ -298,7 +299,7 @@ export default function UsageCompanionPanel({
             {providerNames.length > 0 && <fieldset className="usage-companion-check-list"><legend className="field-label">{t("usage.companion.hideProviders")}</legend>{providerNames.map(provider => <label key={provider}><input type="checkbox" checked={hiddenProviderSet.has(provider)} onChange={event => updateSettings({ hiddenProviders: event.target.checked ? [...current.hiddenProviders, provider] : current.hiddenProviders.filter(item => item !== provider) })} /> <span>{provider}</span></label>)}</fieldset>}
           </div>
         </details>
-      </div>
+      </fieldset>
       <div className={`usage-companion-save-status${saveState === "error" ? " is-error" : ""}`} role={saveState === "error" ? "alert" : "status"}>
         {saveMessage || "\u00a0"}
         {saveState === "error" && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setSaveState("saving"); }}>{t("common.retry")}</button>}
