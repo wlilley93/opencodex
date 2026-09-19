@@ -241,7 +241,7 @@
   animation: pulse 1.2s ease-in-out infinite alternate;
 }
 .usage-companion-chart-state { display: flex; align-items: center; gap: 10px; min-height: 160px; color: var(--muted); }
-.usage-companion-controls { display: grid; gap: 14px; }
+.usage-companion-controls { display: grid; gap: 14px; border: 0; padding: 0; margin: 0; min-width: 0; }
 .usage-companion-control { display: grid; gap: 6px; min-width: 0; }
 .usage-companion-control > select, .usage-companion-control > input {
   min-height: 34px; width: 100%; padding: 6px 9px;
