@@ -1045,7 +1045,7 @@ export async function handleConfigRoutes(ctx: ManagementContext): Promise<Respon
     const error = dictationConfigValueError(dictation, config.providers);
     if (error) return jsonResponse({ error }, 400);
     // Full replacement: an empty block clears the key so config files stay minimal.
-    if (Object.keys(dictation).length === 0) delete config.dictation;
+    if (Object.keys(dictation).length === 0) deleteConfigTopLevelKey(config, "dictation");
     else config.dictation = dictation as unknown as OcxConfig["dictation"];
     saveConfigPreservingClaudeCode(config);
     return jsonResponse({
