@@ -488,6 +488,7 @@ export interface ApiAuthMatrixRow {
  */
 export const AUTH_MATRIX: readonly ApiAuthMatrixRow[] = [
   { endpoint: "/v1/audio/transcriptions", bearer: "accepted", dedicated: "accepted", xApiKey: "accepted" },
+  { endpoint: "/v1/audio/speech", bearer: "accepted", dedicated: "accepted", xApiKey: "accepted" },
   { endpoint: "/v1/live", bearer: "accepted", dedicated: "accepted", xApiKey: "accepted" },
   { endpoint: "/v1/realtime/calls", bearer: "accepted", dedicated: "accepted", xApiKey: "accepted" },
   // #1686: a bearer that is one of OUR admission secrets is now accepted here. It is safe
@@ -1014,6 +1015,11 @@ const PROVIDER_CONFIG_FIELD_POLICY = {
   // Header values may carry credentials (or ${ENV} references to them); treat like `headers`.
   dictationHeaders: "redacted",
   dictationProtocols: "editor",
+  transcriptionUrl: "editor",
+  transcriptionHeaders: "redacted",
+  transcriptionModel: "editor",
+  speechUrl: "editor",
+  speechHeaders: "redacted",
   reasoningEffortMap: "editor",
   modelReasoningEffortMap: "editor",
   reasoningWireFormat: "editor",
