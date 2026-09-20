@@ -70,3 +70,6 @@ go/
 
 # Rust native helpers keep their reproducible sources and lockfile in git, never local artifacts.
 native/**/target/
+
+# A red run disables production code while it works.
+.red-running
