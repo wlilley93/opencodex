@@ -20,6 +20,7 @@
  */
 
 const FILES = [
+  "src/server/audio-live.ts",
   "src/server/audio-speech.ts",
   "src/server/audio-transcriptions.ts",
   "src/config/voice-target.ts",

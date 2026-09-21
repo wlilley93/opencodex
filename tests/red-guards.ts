@@ -23,8 +23,82 @@ type Guard = {
 };
 
 export const VOICE = "tests/server/audio-voice-routes.test.ts";
+export const LIVE_CALL = "tests/server/audio-live-call-create.test.ts";
 
 export const GUARDS: Guard[] = [
+  // liveVoice at call-create: the door the Codex desktop actually walks through.
+  {
+    name: "a plain caller reaches the custom backend when liveVoice names one",
+    file: "src/server/index/serve-options.ts",
+    from: `        const audioClient = keyedAudioClient ?? liveVoiceClientForPlainAdmission(req, config, admission);`,
+    to: `        const audioClient = keyedAudioClient;`,
+    expect: "the desktop, admitted on loopback with its ChatGPT bearer, reaches the custom backend",
+    suite: LIVE_CALL,
+  },
+  {
+    name: "a plain caller is lent the external path only for a custom liveVoice",
+    file: "src/server/audio-live.ts",
+    from: `    if (selection.kind !== "custom") return null;`,
+    to: `    if (selection.kind === "invalid") return null;`,
+    expect: "a plain caller with no custom liveVoice is not turned into an external client",
+    suite: LIVE_CALL,
+  },
+  {
+    name: "a proxy alias joined without a key must belong to the same plain caller",
+    file: "src/server/index/serve-options.ts",
+    from: `          if (!candidate || !liveCallBindings.get(liveSidebandTarget.callId, candidate.owner)) {`,
+    to: `          if (!candidate) {`,
+    expect: "the desktop, admitted on loopback with its ChatGPT bearer, reaches the custom backend",
+    suite: LIVE_CALL,
+  },
+  {
+    name: "a custom live backend is reached at call-create, before any credential",
+    file: "src/server/audio-live.ts",
+    from: `    if (liveSelection.kind === "custom") {`,
+    to: `    if (false && liveSelection.kind === "custom") {`,
+    expect: "a call is created against the custom live backend with no OpenAI credential",
+    suite: LIVE_CALL,
+  },
+  {
+    name: "the client's session block travels with the offer",
+    file: "src/server/audio-live.ts",
+    from: `  if (args.session) {`,
+    to: `  if (false) {`,
+    expect: "a call is created against the custom live backend with no OpenAI credential",
+    suite: LIVE_CALL,
+  },
+  {
+    name: "an unreachable backend is blamed as the backend",
+    file: "src/server/audio-live.ts",
+    from: `    return formatErrorResponse(502, "upstream_error", \`Live backend "\${args.selection.providerName}" is unreachable\`);`,
+    to: `    return formatErrorResponse(401, "authentication_error", "Audio requires a connected ChatGPT account or OpenAI API provider");`,
+    expect: "an unreachable backend is a 502 that names the provider, not a credential error",
+    suite: LIVE_CALL,
+  },
+  {
+    name: "a backend answer without a call id is not bound",
+    file: "src/server/audio-live.ts",
+    from: `  if (!callId || !answer.trim()) {`,
+    to: `  if (!answer.trim()) {`,
+    expect: "a backend that answers without a call id is refused as an invalid answer",
+    suite: LIVE_CALL,
+  },
+  {
+    name: "a backend HTTP failure keeps its status",
+    file: "src/server/audio-live.ts",
+    from: `    return formatErrorResponse(upstream.status >= 400 ? upstream.status : 502, "upstream_error",`,
+    to: `    return formatErrorResponse(502, "upstream_error",`,
+    expect: "a backend HTTP failure is reported with its own status",
+    suite: LIVE_CALL,
+  },
+  {
+    name: "a custom-bound call keeps its backend on the sideband",
+    file: "src/server/audio-live.ts",
+    from: `    if (bound?.liveUrl) {`,
+    to: `    if (false && bound?.liveUrl) {`,
+    expect: "the sideband join of a custom-bound call reaches the backend that answered",
+    suite: LIVE_CALL,
+  },
   {
     name: "the caller's model is not forwarded to a custom backend",
     file: "src/server/audio-transcriptions.ts",

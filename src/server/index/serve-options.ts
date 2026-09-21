@@ -136,6 +136,7 @@ import { resolveDictationSocket } from "../audio-dictation";
 import {
   handleExternalLive,
   resolveExternalLiveSocket,
+  liveVoiceClientForPlainAdmission,
 } from "../audio-live";
 import {
   EXTERNAL_CALL_PREFIX,
@@ -1586,13 +1587,16 @@ export function createServeOptions(ctx: ServeOptionsContext) {
         if (isDraining()) {
           return drainingResponse(req, policy);
         }
-        const audioClient = resolveAudioClient(req, config);
-        if (audioClient instanceof Response) return withCors(audioClient, req, policy);
-        const admission = audioClient?.admission ?? resolveApiAuth(req, policy);
+        const keyedAudioClient = resolveAudioClient(req, config);
+        if (keyedAudioClient instanceof Response) return withCors(keyedAudioClient, req, policy);
+        const admission = keyedAudioClient?.admission ?? resolveApiAuth(req, policy);
         if (!admission) return withCors(formatErrorResponse(401, "authentication_error", "opencodex API key required"), req, policy);
         if (!isAllowedRequestOrigin(req, policy)) {
           return withCors(formatErrorResponse(403, "origin_rejected", "cross-origin data-plane request blocked"), req, policy);
         }
+        // A plain caller -- the desktop with its ChatGPT bearer, on loopback -- takes
+        // the external path when liveVoice names a custom backend; otherwise the relay.
+        const audioClient = keyedAudioClient ?? liveVoiceClientForPlainAdmission(req, config, admission);
         const start = Date.now();
         const requestId = nextRequestLogId(start);
         const logCtx: RequestLogContext = {
@@ -1630,11 +1634,20 @@ export function createServeOptions(ctx: ServeOptionsContext) {
         if (isDraining()) {
           return drainingResponse(req, policy);
         }
-        const audioClient = resolveAudioClient(req, config, dictationSocket);
-        if (audioClient instanceof Response) return withCors(audioClient, req, policy);
+        const keyedAudioClient = resolveAudioClient(req, config, dictationSocket);
+        if (keyedAudioClient instanceof Response) return withCors(keyedAudioClient, req, policy);
+        let audioClient = keyedAudioClient;
         if (!audioClient && liveSidebandTarget && "callId" in liveSidebandTarget
           && liveSidebandTarget.callId.startsWith(EXTERNAL_CALL_PREFIX)) {
-          return withCors(formatErrorResponse(401, "authentication_error", "Live call requires its creator API key"), req, policy);
+          // A proxy alias joined without a proxy key: only the plain caller that
+          // created it (same bearer, same owner) may have it. Anyone else is refused
+          // exactly as before.
+          const plain = resolveApiAuth(req, policy);
+          const candidate = plain ? liveVoiceClientForPlainAdmission(req, config, plain, liveSidebandTarget) : null;
+          if (!candidate || !liveCallBindings.get(liveSidebandTarget.callId, candidate.owner)) {
+            return withCors(formatErrorResponse(401, "authentication_error", "Live call requires its creator API key"), req, policy);
+          }
+          audioClient = candidate;
         }
         const admission = audioClient?.admission ?? resolveApiAuth(req, policy);
         if (!admission) return withCors(formatErrorResponse(401, "authentication_error", "opencodex API key required"), req, policy);

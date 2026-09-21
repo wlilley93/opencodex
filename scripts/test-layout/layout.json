@@ -286,6 +286,7 @@
     "audio-dictation-settings.test.ts": "server",
     "audio-dictation-target.test.ts": "server",
     "audio-dictation.test.ts": "server",
+    "audio-live-call-create.test.ts": "server",
     "audio-live-voice-settings.test.ts": "server",
     "audio-live-voice-target.test.ts": "server",
     "audio-transcriptions.test.ts": "server",
